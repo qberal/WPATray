@@ -1,5 +1,6 @@
 import platform
 import subprocess
+import os
 from PIL import Image, ImageDraw
 import pystray
 from pystray import MenuItem as Item
@@ -34,32 +35,47 @@ def get_latest_wifi_password():
             if match:
                 return match.group(1)
     except Exception as e:
-        print(f"Erreur lors de la récupération du mot de passe: {e}")
+        icon.notify("Erreur: Impossible de récupérer le mot de passe")
     return None
 
 
 def copy_password(icon, item):
-    pyperclip.copy(get_latest_wifi_password())
+    password = get_latest_wifi_password()
+    if password:
+        pyperclip.copy(password)
+        icon.notify('Mot de passe copié dans le presse-papier')
+    else:
+        icon.notify("Erreur: Impossible de récupérer le mot de passe")
 
 
 def refresh_password(icon, item):
     icon.icon = create_image()
+    icon.notify('Le mot de passe a été actualisé')
 
 
 def apply_password(icon, item):
     ssid = "WIFI-WPA"
     password = get_latest_wifi_password()
-    # Appliquer le mot de passe
-    os = platform.system()
+    if not password:
+        icon.notify("Erreur: Impossible de récupérer le mot de passe")
+        return
 
-    if os == "Darwin":
-        subprocess.run(["networksetup", "-setairportnetwork", "en0", ssid, password])
-    elif os == "Windows":
-        subprocess.run(["netsh", "wlan", "set", "profile", "name=" + ssid, "key=" + password])
-    elif os == "Linux":
-        subprocess.run(["nmcli", "device", "wifi", "connect", ssid, "password", password])
-    else:
-        raise Exception(f"OS non supporté: {os}")
+    os_system = platform.system()
+
+    try:
+        if os_system == "Darwin":
+            subprocess.run(["networksetup", "-setairportnetwork", "en0", ssid, password])
+            icon.notify("Mot de passe appliqué avec succès")
+        elif os_system == "Windows":
+            subprocess.run(["netsh", "wlan", "set", "profile", "name=" + ssid, "key=" + password])
+            icon.notify("Mot de passe appliqué avec succès")
+        elif os_system == "Linux":
+            subprocess.run(["nmcli", "device", "wifi", "connect", ssid, "password", password])
+            icon.notify("Mot de passe appliqué avec succès")
+        else:
+            icon.notify(f"OS non supporté: {os_system}")
+    except Exception as e:
+        icon.notify(f"Erreur lors de l'application du mot de passe: {e}")
 
 
 def create_image():
@@ -73,11 +89,11 @@ def create_image():
 
 icon = pystray.Icon("WPATray")
 icon.icon = create_image()
-icon.menu = [
-    Item("MDP: " + get_latest_wifi_password(), copy_password),
+icon.menu = pystray.Menu(
+    Item("MDP: " + (get_latest_wifi_password() or "Inconnu"), copy_password),
     Item("Actualiser le mot de passe", refresh_password),
     Item("Appliquer le mot de passe", apply_password),
-    Item("Quitter", icon.stop)
-]
+    Item("Quitter", lambda icon, item: icon.stop())
+)
 icon.title = "WPATray"
 icon.run()
