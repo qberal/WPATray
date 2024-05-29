@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "wpatray"
+version = "0.1.0"
+description = "App System Tray pour WIFI-WPA de l'INSA de Rouen"
+authors = ["qberal <quentin.beral@insa-rouen.fr>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+"Mastodon.py" = "^1.8.1"
+pyperclip = "^1.8.2"
+pystray = "^0.19.5"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
